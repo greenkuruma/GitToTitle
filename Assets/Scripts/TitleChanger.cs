@@ -7,7 +7,7 @@ namespace GitToTitle
 {
     public static class TitleChanger
     {
-#if UNITY_STANDALONE_WIN
+#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
         [DllImport ("user32.dll", EntryPoint = "SetWindowText")]
         public static extern bool SetWindowText (System.IntPtr hwnd, System.String lpString);
         [DllImport ("user32.dll")]
@@ -33,21 +33,21 @@ namespace GitToTitle
         public static string TitleText (string mainInfo, string subInfo)
         {
             var product = Application.productName;
-            var unityVersion = $"[Unity{Application.unityVersion}]";
+            var unityVersion = $"[v{Application.version}] [u{Application.unityVersion}]";
 
             var gitInfo = GitHelper.Info ();
             if (gitInfo == null)
-                return $"{product} - {mainInfo} - {subInfo} - {unityVersion}";
+                return $"{product} - {unityVersion} {mainInfo} {subInfo} ";
 
             var git = $"{gitInfo.branch}<{gitInfo.hash}>";
-            return $"{product} - {mainInfo} - {git} - {subInfo} - {unityVersion}";
+            return $"{product} - {unityVersion} {mainInfo} {subInfo} {git}";
         }
 #endif
 #else
     public static void TitleChange (string text) { }
     public static void TitleChange () { }
-    public static void TitleText () { return "not supported"; }
-    public static void TitleText (string scene) { return "not supported"; }
+    public static string TitleText () { return "not supported"; }
+    public static string TitleText (string mainInfo, string subInfo) { return "not supported"; }
 #endif
     }
 }

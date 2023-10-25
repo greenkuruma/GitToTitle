@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Security.Policy;
 using UnityEngine;
 
 namespace GitToTitle
@@ -22,6 +23,7 @@ namespace GitToTitle
                 return null;
 
             var head = Text.Read (headFilePath, true);
+            GitInfo info = null;
 
             // branchを参照している
             if (head.Contains("ref:"))
@@ -32,16 +34,18 @@ namespace GitToTitle
                 var branchPath = $"{gitPath}/{head}";
                 var hash = Text.Read (branchPath, true);
 
-                var info = new GitInfo () { branch = head, hash = hash };
-                return info;
+                info = new GitInfo () { branch = head, hash = hash };
             }
             // branchを参照していない
             else
             {
                 // headにhashが入ってる
-                var info = new GitInfo () { branch = "no referencing branch", hash = head };
-                return info;
+                info = new GitInfo () { branch = "no referencing branch", hash = head };
             }
+            // 改行が入ってることがあるので消す
+            info.hash = info.hash.Replace("\r", "").Replace("\n", "");
+
+            return info;
         }
     }
     public static class Text

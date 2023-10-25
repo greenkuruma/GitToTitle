@@ -1,57 +1,54 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
 using UnityEditor.Build;
+using UnityEditor.Build.Reporting;
 using UnityEngine;
+using UnityEngine.WSA;
 
 namespace GitToTitle
 {
-#if UNITY_2018_1_OR_NEWER
-    using UnityEditor.Build.Reporting;
-
     public class TitleChangePrePost : IPreprocessBuildWithReport, IPostprocessBuildWithReport
     {
-        public int callbackOrder => 0;
+        public int callbackOrder { get { return 0; } }
+
+        private string _resourcesDirectoryPath = "Assets/GitToTitleTemp/Resources/";
+        private string _resourcesDirectoryStartPath = "Assets/GitToTitleTemp";
+
+        // ファイルの保存先パス
+        // テキストアセットとして保存するため、拡張子を".txt"に
+        string filePath => _resourcesDirectoryPath + TitleChangeBehaviour.textFileName + ".txt";
 
         public void OnPreprocessBuild (BuildReport report)
         {
             // @todo アクティブなシーン名いれたい…けどまあいいや
+            Debug.Log("OnPreprocessBuild");
 
-            // title文字列設定
             var titleChangeBehaviour = GameObject.FindObjectOfType<TitleChangeBehaviour> ();
-            if (titleChangeBehaviour != null)
-                titleChangeBehaviour.Set (
-                    TitleChanger.TitleText (titleChangeBehaviour.buildName, $"build:{DateTime.Now.ToString ()}"));
+            string buildName = titleChangeBehaviour != null
+                ? titleChangeBehaviour.buildName
+                : "";
+            var titleText = TitleChanger.TitleText(buildName, $"build:{DateTime.Now.ToString()}");
+            CreateAndWriteTextFile(titleText);
+        }
+        public void CreateAndWriteTextFile(string titleText)
+        {
+            // フォルダがなければ作成
+            if (! Directory.Exists(_resourcesDirectoryPath))
+                Directory.CreateDirectory(_resourcesDirectoryPath);
+
+            // テキストファイルを作成し、内容を書き込む
+            File.WriteAllText(filePath, titleText);
+
+            Debug.Log($"OnPreprocessBuild:titleText={titleText}");
         }
 
         public void OnPostprocessBuild (BuildReport report)
         {
-            var titleChangeBehaviour = GameObject.FindObjectOfType<TitleChangeBehaviour> ();
-            if (titleChangeBehaviour != null)
-                titleChangeBehaviour.Clear ();
+            Debug.Log("OnPostprocessBuild");
+
+            Directory.Delete(_resourcesDirectoryStartPath, true);
+            File.Delete(_resourcesDirectoryStartPath + ".meta");
         }
     }
-#else
-    using UnityEditor;
-
-    public class TitleChangePrePost : IPreprocessBuild, IPostprocessBuild
-    {
-        public int callbackOrder => 0;
-
-        public void OnPreprocessBuild (BuildTarget target, string path)
-        {
-            // title文字列設定
-            var titleChangeBehaviour = GameObject.FindObjectOfType<TitleChangeBehaviour> ();
-            if (titleChangeBehaviour != null)
-                titleChangeBehaviour.Set (
-                    TitleChanger.TitleText (titleChangeBehaviour.buildName, $"build:{DateTime.Now.ToString ()}"));
-        }
-
-        public void OnPostprocessBuild (BuildTarget target, string path)
-        {
-            var titleChangeBehaviour = GameObject.FindObjectOfType<TitleChangeBehaviour> ();
-            if (titleChangeBehaviour != null)
-                titleChangeBehaviour.Clear ();
-        }
-
-    }
-#endif
 }
